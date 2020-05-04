@@ -1,15 +1,15 @@
 import cv2
 import numpy as np
 import random
+import sys
 
-
-class point:
+class Point:
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
 
 
-class direction:
+class Direction:
     diagonal_down_right = "diagonal_down_right"
     diagonal_up_right = "diagonal_up_right"
     diagonal_up_left = "diagonal_up_left"
@@ -24,13 +24,11 @@ fa_abc = ['ا', "ب", "پ", "ت", "ث", "ج", "چ", "ح", "خ", "د", "ذ", "ر"
           "ف", "ق", "ک", "گ", "ل", "م", "ن", "و", "ه", "ی"]
 
 grid = 10
-
 table = []
-
 used_points = []
-
 words = []
-
+reset_counter = 0
+max_tries = 20
 
 def addAlphaChannelToImage(img):
     b_channel, g_channel, r_channel = cv2.split(img)
@@ -90,7 +88,7 @@ def checkCoordinatesIsUsed(x: int, y: int, word: str):
     return False
 
 
-def is_empty_together(p: point, length: int, word=""):
+def is_empty_together(p: Point, length: int, word=""):
     if checkCoordinatesIsUsed(p.x, p.y, word[0]):
         return "no"
 
@@ -109,7 +107,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             diagonal_down_right = True
     if diagonal_down_right:
-        return direction.diagonal_down_right
+        return Direction.diagonal_down_right
 
     tempX = p.x
     tempY = p.y
@@ -126,7 +124,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             diagonal_up_right = True
     if diagonal_up_right:
-        return direction.diagonal_up_right
+        return Direction.diagonal_up_right
 
     tempX = p.x
     tempY = p.y
@@ -143,7 +141,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             diagonal_up_left = True
     if diagonal_up_left:
-        return direction.diagonal_up_left
+        return Direction.diagonal_up_left
 
     tempX = p.x
     tempY = p.y
@@ -160,7 +158,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             diagonal_down_left = True
     if diagonal_down_left:
-        return direction.diagonal_down_left
+        return Direction.diagonal_down_left
 
     tempX = p.x
     tempY = p.y
@@ -176,7 +174,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             horizontal_left = True
     if horizontal_left:
-        return direction.horizontal_left
+        return Direction.horizontal_left
 
     tempX = p.x
     tempY = p.y
@@ -192,7 +190,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             horizontal_right = True
     if horizontal_right:
-        return direction.horizontal_right
+        return Direction.horizontal_right
 
     tempX = p.x
     tempY = p.y
@@ -208,7 +206,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             vertical_up = True
     if vertical_up:
-        return direction.vertical_up
+        return Direction.vertical_up
 
     tempX = p.x
     tempY = p.y
@@ -224,7 +222,7 @@ def is_empty_together(p: point, length: int, word=""):
         if i == length - 2:
             vertical_down = True
     if vertical_down:
-        return direction.vertical_down
+        return Direction.vertical_down
 
     return "no"
 
@@ -232,25 +230,25 @@ def is_empty_together(p: point, length: int, word=""):
 def add_word_to_coordinates(word: str, x: int, y: int, way: str):
     for i in range(word.__len__()):
         table[y * grid + x] = word[i]
-        used_points.append(point(x=x, y=y))
-        if way == direction.vertical_down:
+        used_points.append(Point(x=x, y=y))
+        if way == Direction.vertical_down:
             y += 1
-        elif way == direction.vertical_up:
+        elif way == Direction.vertical_up:
             y -= 1
-        elif way == direction.horizontal_right:
+        elif way == Direction.horizontal_right:
             x += 1
-        elif way == direction.horizontal_left:
+        elif way == Direction.horizontal_left:
             x -= 1
-        elif way == direction.diagonal_down_left:
+        elif way == Direction.diagonal_down_left:
             y += 1
             x -= 1
-        elif way == direction.diagonal_up_left:
+        elif way == Direction.diagonal_up_left:
             y -= 1
             x -= 1
-        elif way == direction.diagonal_up_right:
+        elif way == Direction.diagonal_up_right:
             y -= 1
             x += 1
-        elif way == direction.diagonal_down_right:
+        elif way == Direction.diagonal_down_right:
             y += 1
             x += 1
 
@@ -261,7 +259,7 @@ def add_word_to_table(word: str):
     end_iterate = False
     first_end = False
     while True:
-        p = point(firstX, firstY)
+        p = Point(firstX, firstY)
         way = is_empty_together(p, word.__len__(), word)
         if way != "no":
             add_word_to_coordinates(word=word, x=p.x, y=p.y, way=way)
@@ -281,6 +279,10 @@ def add_word_to_table(word: str):
 
 
 def reset():
+    global reset_counter
+    reset_counter += 1
+    if reset_counter > max_tries:
+        raise Exception("Creating puzzel faild: Number of words is too large")
     try:
         global table
         global used_points
@@ -293,14 +295,14 @@ def reset():
         reset()
 
 
-def main(path: str, size: int, words1):
+def main(path: str, size: int, words_list):
     global grid
     global words
     grid = size
-    words = words1
+    words = words_list
     try:
         init_table()
-        for word in words1:
+        for word in words_list:
             add_word_to_table(word)
         printTable()
         writeTableImage(path)
@@ -309,13 +311,13 @@ def main(path: str, size: int, words1):
 
 
 if __name__ == "__main__":
-    size = int(input("enter puzzle size : "))
+    try:
+        file_input = sys.argv[2]
+        size = int(sys.argv[1])
+    except:
+        raise Exception('Bad Arguments: use script with "python3 wsg.py [size] [input-file.txt]"')
     words = []
-    word = input("enter a word : ")
-    words.append(word)
-    while word != int(-1):
-        word = input("enter a word : ")
-        if word == -1:
-            break
-        words.append(word)
-    main(path="output.png", size=size, words1=words)
+    with open(str(file_input)) as file_lines:
+        for line in file_lines:
+            words.append(str(line).strip())
+    main(path="output.png", size=size, words_list=words)
